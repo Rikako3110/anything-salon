@@ -9,7 +9,13 @@ type Customer = {
   id: string;
   name: string;
   phone: string;
+  line_user_id: string | null;
   created_at: string;
+};
+
+type LineUser = {
+  line_user_id: string;
+  last_message_at: string | null;
 };
 
 type Reservation = {
@@ -22,11 +28,14 @@ type Reservation = {
 
 export default function AdminCustomers() {
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [lineUsers, setLineUsers] = useState<LineUser[]>([]);
   const [searchName, setSearchName] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [customerReservations, setCustomerReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [selectedLineId, setSelectedLineId] = useState("");
+  const [message, setMessage] = useState("");
   const router = useRouter();
 
   useEffect(() => {
@@ -41,6 +50,7 @@ export default function AdminCustomers() {
   const handleSearch = async () => {
     setLoading(true);
     setSelectedCustomer(null);
+    setMessage("");
 
     let query = supabase
       .from("customers")
@@ -51,24 +61,52 @@ export default function AdminCustomers() {
       query = query.ilike("name", `%${searchName.trim()}%`);
     }
 
-    const { data, error } = await query.limit(20);
-
-    if (!error) setCustomers(data || []);
+    const { data } = await query.limit(20);
+    setCustomers(data || []);
     setLoading(false);
   };
 
   const selectCustomer = async (customer: Customer) => {
     setSelectedCustomer(customer);
+    setSelectedLineId(customer.line_user_id || "");
+    setMessage("");
     setLoading(true);
 
-    const { data } = await supabase
+    const { data: reservations } = await supabase
       .from("reservations")
       .select("id, date, time, menu_id, status")
       .eq("customer_id", customer.id)
       .order("date", { ascending: false });
 
-    setCustomerReservations(data || []);
+    setCustomerReservations(reservations || []);
+
+    const { data: lines } = await supabase
+      .from("line_users")
+      .select("line_user_id, last_message_at")
+      .order("last_message_at", { ascending: false });
+
+    setLineUsers(lines || []);
     setLoading(false);
+  };
+
+  const handleLink = async () => {
+    if (!selectedCustomer || !selectedLineId) {
+      alert("LINE IDを選択してください");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("customers")
+      .update({ line_user_id: selectedLineId })
+      .eq("id", selectedCustomer.id);
+
+    if (error) {
+      alert("紐づけに失敗しました: " + error.message);
+      return;
+    }
+
+    setSelectedCustomer({ ...selectedCustomer, line_user_id: selectedLineId });
+    setMessage("LINE IDを紐づけました");
   };
 
   const menuNames: Record<string, string> = {
@@ -127,6 +165,9 @@ export default function AdminCustomers() {
                   >
                     <p className="text-lg">{c.name} 様</p>
                     <p className="text-gray-500 text-sm mt-1">{c.phone}</p>
+                    <p className="text-gray-600 text-xs mt-1">
+                      {c.line_user_id ? "LINE連携済み" : "LINE未連携"}
+                    </p>
                   </button>
                 ))
               )}
@@ -150,11 +191,37 @@ export default function AdminCustomers() {
                 来店回数：{customerReservations.length}回
               </p>
               <p className="text-gray-400 text-sm mt-1">
-                最終来店：
-                {customerReservations[0]
-                  ? customerReservations[0].date
-                  : "まだありません"}
+                LINE：{selectedCustomer.line_user_id ? "連携済み" : "未連携"}
               </p>
+            </div>
+
+            {/* LINE紐づけ */}
+            <div className="border border-gray-800 rounded-2xl p-6 mb-8">
+              <h4 className="text-lg mb-4">LINE連携</h4>
+              <select
+                value={selectedLineId}
+                onChange={(e) => setSelectedLineId(e.target.value)}
+                className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-white mb-4"
+              >
+                <option value="">LINEユーザーを選択</option>
+                {lineUsers.map((u) => (
+                  <option key={u.line_user_id} value={u.line_user_id}>
+                    {u.line_user_id.slice(0, 12)}...
+                    {u.last_message_at
+                      ? `（最終：${u.last_message_at.slice(0, 10)}）`
+                      : ""}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={handleLink}
+                className="bg-white text-black px-6 py-2 rounded-full text-sm"
+              >
+                このお客様に紐づける
+              </button>
+              {message && (
+                <p className="text-green-400 text-sm mt-3">{message}</p>
+              )}
             </div>
 
             <h4 className="text-lg mb-4">過去の予約</h4>

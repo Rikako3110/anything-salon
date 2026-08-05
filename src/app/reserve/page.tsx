@@ -66,12 +66,12 @@ try {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      name,
-      menu,
-      date,
-      time,
-    }),
-  });
+  name,
+  phone,
+  menu,
+  date,
+  time,
+}),
 } catch (e) {
   console.error("LINE通知エラー:", e);
 }
