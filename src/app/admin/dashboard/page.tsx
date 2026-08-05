@@ -14,7 +14,10 @@ type Reservation = {
   customers: {
     name: string;
     phone: string;
-  } | null;
+  } | {
+    name: string;
+    phone: string;
+  }[] | null;
 };
 
 export default function AdminDashboard() {
@@ -127,12 +130,16 @@ export default function AdminDashboard() {
               >
                 <div>
                   <p className="text-lg font-medium">
-                    {r.time}　{r.customers?.name || "名前なし"} 様
+                    {Array.isArray(r.customers)
+  ? r.customers[0]?.name || "名前なし"
+  : r.customers?.name || "名前なし"}
                   </p>
                   <p className="text-gray-400 text-sm mt-1">
                     {menuNames[r.menu_id] || r.menu_id}
                   </p>
-                  <p className="text-gray-500 text-sm">{r.customers?.phone}</p>
+                  <p className="text-gray-500 text-sm">{Array.isArray(r.customers)
+  ? r.customers[0]?.phone
+  : r.customers?.phone}</p>
                 </div>
                 <div className="flex flex-col items-end gap-2">
                   {r.status === "visited" ? (

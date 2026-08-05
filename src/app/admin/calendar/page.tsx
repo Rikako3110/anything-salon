@@ -13,7 +13,9 @@ type Reservation = {
   status: string;
   customers: {
     name: string;
-  } | null;
+  } | {
+    name: string;
+  }[] | null;
 };
 
 export default function AdminCalendar() {
@@ -103,7 +105,9 @@ export default function AdminCalendar() {
               >
                 <div>
                   <p className="text-lg">
-                    {r.time}　{r.customers?.name || "名前なし"} 様
+                    {r.time}　{Array.isArray(r.customers)
+  ? r.customers[0]?.name || "名前なし"
+  : r.customers?.name || "名前なし"}
                   </p>
                   <p className="text-gray-400 text-sm mt-1">
                     {menuNames[r.menu_id] || r.menu_id}
