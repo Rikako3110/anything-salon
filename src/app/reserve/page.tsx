@@ -55,28 +55,29 @@ export default function ReservePage() {
           },
         ]);
 
-     if (reservationError) {
-  alert("予約保存エラー: " + reservationError.message);
-  return;
-}
+      if (reservationError) {
+        alert("予約保存エラー: " + reservationError.message);
+        return;
+      }
 
-// LINE通知を送る（失敗しても予約自体は成功扱い）
-try {
-  await fetch("/api/line/notify", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-  name,
-  phone,
-  menu,
-  date,
-  time,
-}),
-} catch (e) {
-  console.error("LINE通知エラー:", e);
-}
+      // LINE通知（失敗しても予約は成功扱い）
+      try {
+        await fetch("/api/line/notify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name,
+            phone,
+            menu,
+            date,
+            time,
+          }),
+        });
+      } catch (e) {
+        console.error("LINE通知エラー:", e);
+      }
 
-setSuccess(true);
+      setSuccess(true);
     } catch (error: any) {
       alert("エラー: " + (error?.message || "不明なエラー"));
     } finally {
