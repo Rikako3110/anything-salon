@@ -41,15 +41,16 @@ export default function AdminNav() {
           顧客管理
         </a>
         <a
-          href="/admin/messages"
-          className="px-4 py-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-900 whitespace-nowrap"
-        >
-          LINE配信
-        </a>
           href="/admin/chart"
           className="px-4 py-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-900 whitespace-nowrap"
         >
           電子カルテ
+        </a>
+        <a
+          href="/admin/messages"
+          className="px-4 py-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-900 whitespace-nowrap"
+        >
+          LINE配信
         </a>
         <a
           href="/"
