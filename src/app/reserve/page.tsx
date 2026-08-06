@@ -39,7 +39,6 @@ export default function ReservePage() {
   useEffect(() => {
     const fetchCalendarData = async () => {
       setLoadingCalendar(true);
-
       const year = currentMonth.getFullYear();
       const month = currentMonth.getMonth();
       const start = `${year}-${String(month + 1).padStart(2, "0")}-01`;
@@ -53,7 +52,6 @@ export default function ReservePage() {
         .select("date")
         .gte("date", start)
         .lte("date", end);
-
       setBlockedDates((blocked || []).map((b) => b.date));
 
       const { data: reservations } = await supabase
@@ -71,7 +69,6 @@ export default function ReservePage() {
       setReservedMap(map);
       setLoadingCalendar(false);
     };
-
     fetchCalendarData();
   }, [currentMonth]);
 
@@ -97,7 +94,6 @@ export default function ReservePage() {
     const month = currentMonth.getMonth();
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-
     const cells: (null | { day: number; dateStr: string })[] = [];
     for (let i = 0; i < firstDay; i++) cells.push(null);
     for (let d = 1; d <= daysInMonth; d++) {
@@ -122,106 +118,30 @@ export default function ReservePage() {
   };
 
   const nextMonth = () => {
-    setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
-    );
-    setDate("");
-    setTime("");
-  };
-
-  const handleSubmit = async () => {
-    if (!name || !phone) return;
-    setLoading(true);
-
-    try {
-      const { data: customer, error: customerError } = await supabase
-        .from("customers")
-        .insert([{ name, phone }])
-        .select()
-        .single();
-
-      if (customerError) {
-        alert("顧客保存エラー: " + customerError.message);
-        return;
-      }
-
-      if (!customer) {
-        alert("顧客データが取得できませんでした");
-        return;
-      }
-
-      const { error: reservationError } = await supabase
-        .from("reservations")
-        .insert([
-          {
-            customer_id: customer.id,
-            menu_id: menuId,
-            date,
-            time,
-            status: "confirmed",
-          },
-        ]);
-
-      if (reservationError) {
-        alert("予約保存エラー: " + reservationError.message);
-        return;
-      }
-
-      try {
-        await fetch("/api/line/notify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, phone, menu, date, time }),
-        });
-      } catch (e) {
-        console.error("LINE通知エラー:", e);
-      }
-
-      setSuccess(true);
-    } catch (error: any) {
-      alert("エラー: " + (error?.message || "不明なエラー"));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (success) {
-    return (
-      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-6">
-        <h1 className="text-3xl font-light mb-4">ご予約ありがとうございました</h1>
-        <p className="text-gray-400 text-center mb-8">
-          {name} 様
-          <br />
-          {date} {time}
-          <br />
-          {menu}
-        </p>
-        <a href="/" className="bg-white text-black px-8 py-3 rounded-full">
-          トップに戻る
-        </a>
-      </div>
-    );
-  }
-  return (
-    <div className="min-h-screen bg-black text-white">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
-        <a href="/" className="text-2xl font-bold tracking-wider">
-          Anything
-        </a>
-        <a href="/" className="text-sm text-gray-400 hover:text-white">
-          トップに戻る
-        </a>
+     return (
+    <div className="min-h-screen bg-[#f7f5f2] text-[#4a453f]">
+      <header className="bg-[#f7f5f2]/90 backdrop-blur border-b border-[#e8e4de] sticky top-0 z-10">
+        <div className="max-w-lg mx-auto flex items-center justify-between px-6 py-4">
+          <a href="/" className="text-xl tracking-[0.2em] font-light text-[#3d3935]">
+            Anything
+          </a>
+          <a href="/" className="text-xs tracking-wider text-[#7a746c] hover:text-[#3d3935]">
+            トップに戻る
+          </a>
+        </div>
       </header>
 
       <div className="max-w-lg mx-auto px-6 py-12">
-        <h1 className="text-3xl font-light text-center mb-2">ご予約</h1>
-        <p className="text-center text-gray-500 text-sm mb-10">
-          Step {step} / 4
+        <h1 className="text-2xl font-light text-center mb-2 text-[#3d3935]">ご予約</h1>
+        <p className="text-center text-[#a39e96] text-xs tracking-widest mb-10">
+          STEP {step} / 4
         </p>
 
         {step === 1 && (
           <div className="space-y-4">
-            <h2 className="text-xl mb-6">メニューを選択してください</h2>
+            <h2 className="text-base mb-6 text-center text-[#7a746c]">
+              メニューを選択してください
+            </h2>
             {menus.map((m) => (
               <button
                 key={m.id}
@@ -230,14 +150,14 @@ export default function ReservePage() {
                   setMenuId(m.id);
                   setStep(2);
                 }}
-                className="w-full border border-gray-700 rounded-2xl p-5 text-left hover:border-white transition"
+                className="w-full bg-white border border-[#e8e4de] rounded-2xl p-5 text-left hover:border-[#c4bdb3] transition"
               >
                 <div className="flex justify-between items-center">
                   <div>
-                    <p className="text-lg">{m.name}</p>
-                    <p className="text-gray-500 text-sm">{m.duration}</p>
+                    <p className="text-lg text-[#3d3935]">{m.name}</p>
+                    <p className="text-[#a39e96] text-sm mt-1">{m.duration}</p>
                   </div>
-                  <p className="text-gray-300">{m.price}</p>
+                  <p className="text-[#5c564f]">{m.price}</p>
                 </div>
               </button>
             ))}
@@ -246,29 +166,31 @@ export default function ReservePage() {
 
         {step === 2 && (
           <div>
-            <h2 className="text-xl mb-6">希望日を選択してください</h2>
+            <h2 className="text-base mb-6 text-center text-[#7a746c]">
+              希望日を選択してください
+            </h2>
 
             <div className="flex items-center justify-between mb-4">
               <button
                 onClick={prevMonth}
-                className="px-3 py-1 border border-gray-700 rounded-lg text-sm"
+                className="px-3 py-1 border border-[#e8e4de] rounded-lg text-sm bg-white"
               >
                 ←
               </button>
-              <p className="text-lg">{monthLabel}</p>
+              <p className="text-base text-[#3d3935]">{monthLabel}</p>
               <button
                 onClick={nextMonth}
-                className="px-3 py-1 border border-gray-700 rounded-lg text-sm"
+                className="px-3 py-1 border border-[#e8e4de] rounded-lg text-sm bg-white"
               >
                 →
               </button>
             </div>
 
             {loadingCalendar ? (
-              <p className="text-gray-400 text-center py-10">読み込み中...</p>
+              <p className="text-[#a39e96] text-center py-10">読み込み中...</p>
             ) : (
               <>
-                <div className="grid grid-cols-7 gap-1 text-center text-xs text-gray-500 mb-2">
+                <div className="grid grid-cols-7 gap-1 text-center text-xs text-[#a39e96] mb-2">
                   {["日", "月", "火", "水", "木", "金", "土"].map((w) => (
                     <div key={w} className="py-2">
                       {w}
@@ -291,10 +213,10 @@ export default function ReservePage() {
                         className={
                           "aspect-square rounded-lg text-sm transition " +
                           (selected
-                            ? "bg-white text-black"
+                            ? "bg-[#5c564f] text-white"
                             : disabled
-                            ? "text-gray-700 cursor-not-allowed"
-                            : "hover:bg-gray-800 text-white")
+                            ? "text-[#d4cfc8] cursor-not-allowed"
+                            : "bg-white text-[#3d3935] hover:bg-[#efebe6]")
                         }
                       >
                         {cell.day}
@@ -302,8 +224,8 @@ export default function ReservePage() {
                     );
                   })}
                 </div>
-                <p className="text-xs text-gray-500 mb-6">
-                  灰色の日は予約できません（過去・NG日・満席）
+                <p className="text-xs text-[#a39e96] mb-6 text-center">
+                  薄い日は予約できません（過去・NG日・満席）
                 </p>
               </>
             )}
@@ -311,14 +233,14 @@ export default function ReservePage() {
             <div className="flex gap-4">
               <button
                 onClick={() => setStep(1)}
-                className="flex-1 border border-gray-600 py-3 rounded-full"
+                className="flex-1 border border-[#c4bdb3] py-3 rounded-full text-sm"
               >
                 戻る
               </button>
               <button
                 onClick={() => date && setStep(3)}
                 disabled={!date}
-                className="flex-1 bg-white text-black py-3 rounded-full disabled:opacity-40"
+                className="flex-1 bg-[#5c564f] text-white py-3 rounded-full text-sm disabled:opacity-40"
               >
                 次へ
               </button>
@@ -328,12 +250,14 @@ export default function ReservePage() {
 
         {step === 3 && (
           <div>
-            <h2 className="text-xl mb-2">希望時間を選択してください</h2>
-            <p className="text-gray-500 text-sm mb-6">{date}</p>
+            <h2 className="text-base mb-2 text-center text-[#7a746c]">
+              希望時間を選択してください
+            </h2>
+            <p className="text-[#a39e96] text-sm mb-6 text-center">{date}</p>
 
             {availableTimes.length === 0 ? (
-              <p className="text-gray-400 mb-8">
-                この日は空き時間がありません。別の日を選んでください。
+              <p className="text-[#a39e96] mb-8 text-center">
+                この日は空きがありません。別の日を選んでください。
               </p>
             ) : (
               <div className="grid grid-cols-2 gap-3 mb-8">
@@ -342,10 +266,10 @@ export default function ReservePage() {
                     key={t}
                     onClick={() => setTime(t)}
                     className={
-                      "py-3 rounded-xl border " +
+                      "py-3 rounded-xl border text-sm " +
                       (time === t
-                        ? "border-white bg-white text-black"
-                        : "border-gray-700 hover:border-gray-400")
+                        ? "border-[#5c564f] bg-[#5c564f] text-white"
+                        : "border-[#e8e4de] bg-white hover:border-[#c4bdb3]")
                     }
                   >
                     {t}
@@ -357,14 +281,14 @@ export default function ReservePage() {
             <div className="flex gap-4">
               <button
                 onClick={() => setStep(2)}
-                className="flex-1 border border-gray-600 py-3 rounded-full"
+                className="flex-1 border border-[#c4bdb3] py-3 rounded-full text-sm"
               >
                 戻る
               </button>
               <button
                 onClick={() => time && setStep(4)}
                 disabled={!time}
-                className="flex-1 bg-white text-black py-3 rounded-full disabled:opacity-40"
+                className="flex-1 bg-[#5c564f] text-white py-3 rounded-full text-sm disabled:opacity-40"
               >
                 次へ
               </button>
@@ -374,32 +298,34 @@ export default function ReservePage() {
 
         {step === 4 && (
           <div>
-            <h2 className="text-xl mb-6">お客様情報を入力してください</h2>
+            <h2 className="text-base mb-6 text-center text-[#7a746c]">
+              お客様情報を入力してください
+            </h2>
             <div className="space-y-4 mb-8">
               <div>
-                <label className="text-sm text-gray-400">お名前</label>
+                <label className="text-xs text-[#a39e96]">お名前</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="山田 花子"
-                  className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 mt-1 text-white"
+                  className="w-full bg-white border border-[#e8e4de] rounded-xl px-4 py-3 mt-1 text-[#3d3935]"
                 />
               </div>
               <div>
-                <label className="text-sm text-gray-400">電話番号</label>
+                <label className="text-xs text-[#a39e96]">電話番号</label>
                 <input
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="090-1234-5678"
-                  className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 mt-1 text-white"
+                  className="w-full bg-white border border-[#e8e4de] rounded-xl px-4 py-3 mt-1 text-[#3d3935]"
                 />
               </div>
             </div>
 
-            <div className="bg-gray-900 rounded-2xl p-5 mb-8 text-sm">
-              <p className="text-gray-400 mb-2">ご予約内容</p>
+            <div className="bg-white border border-[#e8e4de] rounded-2xl p-5 mb-8 text-sm">
+              <p className="text-[#a39e96] mb-2 text-xs">ご予約内容</p>
               <p>メニュー：{menu}</p>
               <p>
                 日時：{date} {time}
@@ -409,14 +335,14 @@ export default function ReservePage() {
             <div className="flex gap-4">
               <button
                 onClick={() => setStep(3)}
-                className="flex-1 border border-gray-600 py-3 rounded-full"
+                className="flex-1 border border-[#c4bdb3] py-3 rounded-full text-sm"
               >
                 戻る
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={!name || !phone || loading}
-                className="flex-1 bg-white text-black py-3 rounded-full disabled:opacity-40"
+                className="flex-1 bg-[#5c564f] text-white py-3 rounded-full text-sm disabled:opacity-40"
               >
                 {loading ? "送信中..." : "予約を確定する"}
               </button>
