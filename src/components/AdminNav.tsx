@@ -64,6 +64,12 @@ export default function AdminNav() {
         >
           サイトを見る
         </a>
+        <a
+          href="/admin/menus"
+          className="px-4 py-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-900 whitespace-nowrap"
+        >
+          メニュー設定
+        </a>
       </nav>
     </header>
   );

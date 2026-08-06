@@ -4,11 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 const ALL_TIMES = ["10:00", "11:30", "13:00", "14:30", "16:00", "17:30"];
-const menus = [
-  { id: "facial", name: "フェイシャル", duration: "90分", price: "¥12,000" },
-  { id: "body", name: "ボディ", duration: "90分", price: "¥15,000" },
-  { id: "hair", name: "脱毛", duration: "60分〜", price: "¥8,000〜" },
-];
+
+type MenuItem = {
+  id: string;
+  name: string;
+  duration: string | null;
+  price: string | null;
+  description: string | null;
+};
 
 export default function ReservePage() {
   const [step, setStep] = useState(1);
@@ -28,8 +31,23 @@ export default function ReservePage() {
   const [reservedMap, setReservedMap] = useState<Record<string, string[]>>({});
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
   const [loadingCalendar, setLoadingCalendar] = useState(true);
+  const [menus, setMenus] = useState<MenuItem[]>([]);
+  const [loadingMenus, setLoadingMenus] = useState(true);
 
   const todayStr = useMemo(() => new Date().toISOString().split("T")[0], []);
+  useEffect(() => {
+    const fetchMenus = async () => {
+      setLoadingMenus(true);
+      const { data } = await supabase
+        .from("menus")
+        .select("id, name, duration, price, description")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true });
+      setMenus(data || []);
+      setLoadingMenus(false);
+    };
+    fetchMenus();
+  }, []);
 
   useEffect(() => {
     const run = async () => {
@@ -171,25 +189,34 @@ export default function ReservePage() {
         {step === 1 && (
           <div className="space-y-4">
             <h2 className="text-center text-[#7a746c] mb-6">メニューを選択してください</h2>
-            {menus.map((m) => (
-              <button
-                key={m.id}
-                onClick={() => {
-                  setMenu(m.name);
-                  setMenuId(m.id);
-                  setStep(2);
-                }}
-                className="w-full bg-white border border-[#e8e4de] rounded-2xl p-5 text-left hover:border-[#c4bdb3]"
-              >
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-lg">{m.name}</p>
-                    <p className="text-sm text-[#a39e96] mt-1">{m.duration}</p>
+            {loadingMenus ? (
+              <p className="text-center text-[#a39e96]">読み込み中...</p>
+            ) : menus.length === 0 ? (
+              <p className="text-center text-[#a39e96]">メニューがありません</p>
+            ) : (
+              menus.map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => {
+                    setMenu(m.name);
+                    setMenuId(m.id);
+                    setStep(2);
+                  }}
+                  className="w-full bg-white border border-[#e8e4de] rounded-2xl p-5 text-left hover:border-[#c4bdb3]"
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-lg">{m.name}</p>
+                      <p className="text-sm text-[#a39e96] mt-1">
+                        {m.duration}
+                        {m.description ? ` / ${m.description}` : ""}
+                      </p>
+                    </div>
+                    <p>{m.price}</p>
                   </div>
-                  <p>{m.price}</p>
-                </div>
-              </button>
-            ))}
+                </button>
+              ))
+            )}
           </div>
         )}
 
