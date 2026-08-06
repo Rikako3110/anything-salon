@@ -50,6 +50,12 @@ export default function AdminNav() {
           href="/admin/messages"
           className="px-4 py-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-900 whitespace-nowrap"
         >
+        <a
+          href="/admin/blocked"
+          className="px-4 py-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-900 whitespace-nowrap"
+        >
+          NG日設定
+        </a>
           LINE配信
         </a>
         <a

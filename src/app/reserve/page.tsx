@@ -1,7 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
+
+const ALL_TIMES = ["10:00", "11:30", "13:00", "14:30", "16:00", "17:30"];
+
+const menus = [
+  { id: "facial", name: "フェイシャル", duration: "90分", price: "¥12,000" },
+  { id: "body", name: "ボディ", duration: "90分", price: "¥15,000" },
+  { id: "hair", name: "脱毛", duration: "60分〜", price: "¥8,000〜" },
+];
 
 export default function ReservePage() {
   const [step, setStep] = useState(1);
@@ -14,13 +22,112 @@ export default function ReservePage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const menus = [
-    { id: "facial", name: "フェイシャル", duration: "90分", price: "¥12,000" },
-    { id: "body", name: "ボディ", duration: "90分", price: "¥15,000" },
-    { id: "hair", name: "脱毛", duration: "60分〜", price: "¥8,000〜" },
-  ];
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+  const [blockedDates, setBlockedDates] = useState<string[]>([]);
+  const [reservedMap, setReservedMap] = useState<Record<string, string[]>>({});
+  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
+  const [loadingCalendar, setLoadingCalendar] = useState(true);
 
-  const times = ["10:00", "11:30", "13:00", "14:30", "16:00", "17:30"];
+  const todayStr = useMemo(() => {
+    const d = new Date();
+    return d.toISOString().split("T")[0];
+  }, []);
+
+  useEffect(() => {
+    const fetchCalendarData = async () => {
+      setLoadingCalendar(true);
+
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth();
+      const start = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+      const endDate = new Date(year, month + 1, 0);
+      const end = `${year}-${String(month + 1).padStart(2, "0")}-${String(
+        endDate.getDate()
+      ).padStart(2, "0")}`;
+
+      const { data: blocked } = await supabase
+        .from("blocked_dates")
+        .select("date")
+        .gte("date", start)
+        .lte("date", end);
+
+      setBlockedDates((blocked || []).map((b) => b.date));
+
+      const { data: reservations } = await supabase
+        .from("reservations")
+        .select("date, time")
+        .gte("date", start)
+        .lte("date", end)
+        .neq("status", "cancelled");
+
+      const map: Record<string, string[]> = {};
+      (reservations || []).forEach((r) => {
+        if (!map[r.date]) map[r.date] = [];
+        map[r.date].push(r.time);
+      });
+      setReservedMap(map);
+      setLoadingCalendar(false);
+    };
+
+    fetchCalendarData();
+  }, [currentMonth]);
+
+  useEffect(() => {
+    if (!date) {
+      setAvailableTimes([]);
+      return;
+    }
+    const taken = reservedMap[date] || [];
+    setAvailableTimes(ALL_TIMES.filter((t) => !taken.includes(t)));
+  }, [date, reservedMap]);
+
+  const isDisabledDate = (dateStr: string) => {
+    if (dateStr < todayStr) return true;
+    if (blockedDates.includes(dateStr)) return true;
+    const taken = reservedMap[dateStr] || [];
+    if (taken.length >= ALL_TIMES.length) return true;
+    return false;
+  };
+
+  const calendarDays = useMemo(() => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const cells: (null | { day: number; dateStr: string })[] = [];
+    for (let i = 0; i < firstDay; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(
+        d
+      ).padStart(2, "0")}`;
+      cells.push({ day: d, dateStr });
+    }
+    return cells;
+  }, [currentMonth]);
+
+  const monthLabel = `${currentMonth.getFullYear()}年${
+    currentMonth.getMonth() + 1
+  }月`;
+
+  const prevMonth = () => {
+    setCurrentMonth(
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)
+    );
+    setDate("");
+    setTime("");
+  };
+
+  const nextMonth = () => {
+    setCurrentMonth(
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
+    );
+    setDate("");
+    setTime("");
+  };
 
   const handleSubmit = async () => {
     if (!name || !phone) return;
@@ -49,8 +156,8 @@ export default function ReservePage() {
           {
             customer_id: customer.id,
             menu_id: menuId,
-            date: date,
-            time: time,
+            date,
+            time,
             status: "confirmed",
           },
         ]);
@@ -60,18 +167,11 @@ export default function ReservePage() {
         return;
       }
 
-      // LINE通知（失敗しても予約は成功扱い）
       try {
         await fetch("/api/line/notify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name,
-            phone,
-            menu,
-            date,
-            time,
-          }),
+          body: JSON.stringify({ name, phone, menu, date, time }),
         });
       } catch (e) {
         console.error("LINE通知エラー:", e);
@@ -90,8 +190,10 @@ export default function ReservePage() {
       <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-6">
         <h1 className="text-3xl font-light mb-4">ご予約ありがとうございました</h1>
         <p className="text-gray-400 text-center mb-8">
-          {name} 様<br />
-          {date} {time}<br />
+          {name} 様
+          <br />
+          {date} {time}
+          <br />
           {menu}
         </p>
         <a href="/" className="bg-white text-black px-8 py-3 rounded-full">
@@ -118,6 +220,7 @@ export default function ReservePage() {
           Step {step} / 4
         </p>
 
+        {/* Step 1: メニュー */}
         {step === 1 && (
           <div className="space-y-4">
             <h2 className="text-xl mb-6">メニューを選択してください</h2>
@@ -143,15 +246,70 @@ export default function ReservePage() {
           </div>
         )}
 
+        {/* Step 2: カレンダー */}
         {step === 2 && (
           <div>
             <h2 className="text-xl mb-6">希望日を選択してください</h2>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-white mb-8"
-            />
+
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={prevMonth}
+                className="px-3 py-1 border border-gray-700 rounded-lg text-sm"
+              >
+                ←
+              </button>
+              <p className="text-lg">{monthLabel}</p>
+              <button
+                onClick={nextMonth}
+                className="px-3 py-1 border border-gray-700 rounded-lg text-sm"
+              >
+                →
+              </button>
+            </div>
+
+            {loadingCalendar ? (
+              <p className="text-gray-400 text-center py-10">読み込み中...</p>
+            ) : (
+              <>
+                <div className="grid grid-cols-7 gap-1 text-center text-xs text-gray-500 mb-2">
+                  {["日", "月", "火", "水", "木", "金", "土"].map((w) => (
+                    <div key={w} className="py-2">
+                      {w}
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 gap-1 mb-6">
+                  {calendarDays.map((cell, i) => {
+                    if (!cell) return <div key={`e-${i}`} />;
+                    const disabled = isDisabledDate(cell.dateStr);
+                    const selected = date === cell.dateStr;
+                    return (
+                      <button
+                        key={cell.dateStr}
+                        disabled={disabled}
+                        onClick={() => {
+                          setDate(cell.dateStr);
+                          setTime("");
+                        }}
+                        className={`aspect-square rounded-lg text-sm transition ${
+                          selected
+                            ? "bg-white text-black"
+                            : disabled
+                            ? "text-gray-700 cursor-not-allowed"
+                            : "hover:bg-gray-800 text-white"
+                        }`}
+                      >
+                        {cell.day}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-gray-500 mb-6">
+                  灰色の日は予約できません（過去・NG日・満席）
+                </p>
+              </>
+            )}
+
             <div className="flex gap-4">
               <button
                 onClick={() => setStep(1)}
@@ -170,94 +328,7 @@ export default function ReservePage() {
           </div>
         )}
 
+        {/* Step 3: 時間 */}
         {step === 3 && (
           <div>
-            <h2 className="text-xl mb-6">希望時間を選択してください</h2>
-            <div className="grid grid-cols-2 gap-3 mb-8">
-              {times.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setTime(t)}
-                  className={`py-3 rounded-xl border ${
-                    time === t
-                      ? "border-white bg-white text-black"
-                      : "border-gray-700 hover:border-gray-400"
-                  }`}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-4">
-              <button
-                onClick={() => setStep(2)}
-                className="flex-1 border border-gray-600 py-3 rounded-full"
-              >
-                戻る
-              </button>
-              <button
-                onClick={() => time && setStep(4)}
-                disabled={!time}
-                className="flex-1 bg-white text-black py-3 rounded-full disabled:opacity-40"
-              >
-                次へ
-              </button>
-            </div>
-          </div>
-        )}
-
-        {step === 4 && (
-          <div>
-            <h2 className="text-xl mb-6">お客様情報を入力してください</h2>
-            <div className="space-y-4 mb-8">
-              <div>
-                <label className="text-sm text-gray-400">お名前</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="山田 花子"
-                  className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 mt-1 text-white"
-                />
-              </div>
-              <div>
-                <label className="text-sm text-gray-400">電話番号</label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="090-1234-5678"
-                  className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 mt-1 text-white"
-                />
-              </div>
-            </div>
-
-            <div className="bg-gray-900 rounded-2xl p-5 mb-8 text-sm">
-              <p className="text-gray-400 mb-2">ご予約内容</p>
-              <p>メニュー：{menu}</p>
-              <p>
-                日時：{date} {time}
-              </p>
-            </div>
-
-            <div className="flex gap-4">
-              <button
-                onClick={() => setStep(3)}
-                className="flex-1 border border-gray-600 py-3 rounded-full"
-              >
-                戻る
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={!name || !phone || loading}
-                className="flex-1 bg-white text-black py-3 rounded-full disabled:opacity-40"
-              >
-                {loading ? "送信中..." : "予約を確定する"}
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+            <h2 className="text-xl mb-2">希望時間を選択してください</h2>
