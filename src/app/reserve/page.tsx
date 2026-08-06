@@ -202,7 +202,6 @@ export default function ReservePage() {
       </div>
     );
   }
-
   return (
     <div className="min-h-screen bg-black text-white">
       <header className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
@@ -220,7 +219,6 @@ export default function ReservePage() {
           Step {step} / 4
         </p>
 
-        {/* Step 1: メニュー */}
         {step === 1 && (
           <div className="space-y-4">
             <h2 className="text-xl mb-6">メニューを選択してください</h2>
@@ -246,7 +244,6 @@ export default function ReservePage() {
           </div>
         )}
 
-        {/* Step 2: カレンダー */}
         {step === 2 && (
           <div>
             <h2 className="text-xl mb-6">希望日を選択してください</h2>
@@ -280,7 +277,7 @@ export default function ReservePage() {
                 </div>
                 <div className="grid grid-cols-7 gap-1 mb-6">
                   {calendarDays.map((cell, i) => {
-                    if (!cell) return <div key={`e-${i}`} />;
+                    if (!cell) return <div key={"e-" + i} />;
                     const disabled = isDisabledDate(cell.dateStr);
                     const selected = date === cell.dateStr;
                     return (
@@ -291,13 +288,14 @@ export default function ReservePage() {
                           setDate(cell.dateStr);
                           setTime("");
                         }}
-                        className={`aspect-square rounded-lg text-sm transition ${
-                          selected
+                        className={
+                          "aspect-square rounded-lg text-sm transition " +
+                          (selected
                             ? "bg-white text-black"
                             : disabled
                             ? "text-gray-700 cursor-not-allowed"
-                            : "hover:bg-gray-800 text-white"
-                        }`}
+                            : "hover:bg-gray-800 text-white")
+                        }
                       >
                         {cell.day}
                       </button>
@@ -328,7 +326,104 @@ export default function ReservePage() {
           </div>
         )}
 
-        {/* Step 3: 時間 */}
         {step === 3 && (
           <div>
             <h2 className="text-xl mb-2">希望時間を選択してください</h2>
+            <p className="text-gray-500 text-sm mb-6">{date}</p>
+
+            {availableTimes.length === 0 ? (
+              <p className="text-gray-400 mb-8">
+                この日は空き時間がありません。別の日を選んでください。
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 mb-8">
+                {availableTimes.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setTime(t)}
+                    className={
+                      "py-3 rounded-xl border " +
+                      (time === t
+                        ? "border-white bg-white text-black"
+                        : "border-gray-700 hover:border-gray-400")
+                    }
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="flex gap-4">
+              <button
+                onClick={() => setStep(2)}
+                className="flex-1 border border-gray-600 py-3 rounded-full"
+              >
+                戻る
+              </button>
+              <button
+                onClick={() => time && setStep(4)}
+                disabled={!time}
+                className="flex-1 bg-white text-black py-3 rounded-full disabled:opacity-40"
+              >
+                次へ
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 4 && (
+          <div>
+            <h2 className="text-xl mb-6">お客様情報を入力してください</h2>
+            <div className="space-y-4 mb-8">
+              <div>
+                <label className="text-sm text-gray-400">お名前</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="山田 花子"
+                  className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 mt-1 text-white"
+                />
+              </div>
+              <div>
+                <label className="text-sm text-gray-400">電話番号</label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="090-1234-5678"
+                  className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 mt-1 text-white"
+                />
+              </div>
+            </div>
+
+            <div className="bg-gray-900 rounded-2xl p-5 mb-8 text-sm">
+              <p className="text-gray-400 mb-2">ご予約内容</p>
+              <p>メニュー：{menu}</p>
+              <p>
+                日時：{date} {time}
+              </p>
+            </div>
+
+            <div className="flex gap-4">
+              <button
+                onClick={() => setStep(3)}
+                className="flex-1 border border-gray-600 py-3 rounded-full"
+              >
+                戻る
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={!name || !phone || loading}
+                className="flex-1 bg-white text-black py-3 rounded-full disabled:opacity-40"
+              >
+                {loading ? "送信中..." : "予約を確定する"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
