@@ -11,12 +11,14 @@ type MenuItem = {
   duration: string | null;
   price: string | null;
   description: string | null;
+  category: string | null;
 };
 
 export default function ReservePage() {
   const [step, setStep] = useState(1);
   const [menu, setMenu] = useState("");
   const [menuId, setMenuId] = useState("");
+  const [category, setCategory] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [name, setName] = useState("");
@@ -35,12 +37,13 @@ export default function ReservePage() {
   const [loadingMenus, setLoadingMenus] = useState(true);
 
   const todayStr = useMemo(() => new Date().toISOString().split("T")[0], []);
+
   useEffect(() => {
     const fetchMenus = async () => {
       setLoadingMenus(true);
       const { data } = await supabase
         .from("menus")
-        .select("id, name, duration, price, description")
+        .select("id, name, duration, price, description, category")
         .eq("is_active", true)
         .order("sort_order", { ascending: true });
       setMenus(data || []);
@@ -48,6 +51,14 @@ export default function ReservePage() {
     };
     fetchMenus();
   }, []);
+
+  const categories = Array.from(
+    new Set(
+      menus
+        .map((m) => m.category || m.name)
+        .filter((c): c is string => Boolean(c))
+    )
+  );
 
   useEffect(() => {
     const run = async () => {
@@ -177,30 +188,60 @@ export default function ReservePage() {
     <div className="min-h-screen bg-[#f7f5f2] text-[#4a453f]">
       <header className="border-b border-[#e8e4de] sticky top-0 bg-[#f7f5f2]/90 backdrop-blur z-10">
         <div className="max-w-lg mx-auto flex justify-between items-center px-6 py-4">
-          <a href="/" className="text-xl tracking-[0.2em] font-light">Anything</a>
-          <a href="/" className="text-xs text-[#7a746c]">トップに戻る</a>
+          <a href="/" className="text-xl tracking-[0.2em] font-light">
+            Anything
+          </a>
+          <a href="/" className="text-xs text-[#7a746c]">
+            トップに戻る
+          </a>
         </div>
       </header>
 
       <div className="max-w-lg mx-auto px-6 py-12">
         <h1 className="text-2xl font-light text-center mb-2">ご予約</h1>
-        <p className="text-center text-[#a39e96] text-xs tracking-widest mb-10">STEP {step} / 4</p>
+        <p className="text-center text-[#a39e96] text-xs tracking-widest mb-10">
+          STEP {step} / 5
+        </p>
 
+        {/* Step1: カテゴリ */}
         {step === 1 && (
           <div className="space-y-4">
-            <h2 className="text-center text-[#7a746c] mb-6">メニューを選択してください</h2>
+            <h2 className="text-center text-[#7a746c] mb-6">カテゴリを選択してください</h2>
             {loadingMenus ? (
               <p className="text-center text-[#a39e96]">読み込み中...</p>
-            ) : menus.length === 0 ? (
+            ) : categories.length === 0 ? (
               <p className="text-center text-[#a39e96]">メニューがありません</p>
             ) : (
-              menus.map((m) => (
+              categories.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => {
+                    setCategory(c);
+                    setStep(2);
+                  }}
+                  className="w-full bg-white border border-[#e8e4de] rounded-2xl p-5 text-left hover:border-[#c4bdb3]"
+                >
+                  <p className="text-lg">{c}</p>
+                </button>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* Step2: メニュー */}
+        {step === 2 && (
+          <div className="space-y-4">
+            <h2 className="text-center text-[#7a746c] mb-2">メニューを選択してください</h2>
+            <p className="text-center text-xs text-[#a39e96] mb-6">{category}</p>
+            {menus
+              .filter((m) => (m.category || m.name) === category)
+              .map((m) => (
                 <button
                   key={m.id}
                   onClick={() => {
                     setMenu(m.name);
                     setMenuId(m.id);
-                    setStep(2);
+                    setStep(3);
                   }}
                   className="w-full bg-white border border-[#e8e4de] rounded-2xl p-5 text-left hover:border-[#c4bdb3]"
                 >
@@ -215,18 +256,29 @@ export default function ReservePage() {
                     <p>{m.price}</p>
                   </div>
                 </button>
-              ))
-            )}
+              ))}
+            <button
+              onClick={() => {
+                setCategory("");
+                setStep(1);
+              }}
+              className="w-full border border-[#c4bdb3] py-3 rounded-full text-sm mt-4"
+            >
+              カテゴリ選択に戻る
+            </button>
           </div>
         )}
 
-        {step === 2 && (
+        {/* Step3: カレンダー */}
+        {step === 3 && (
           <div>
             <h2 className="text-center text-[#7a746c] mb-6">希望日を選択してください</h2>
             <div className="flex justify-between items-center mb-4">
               <button
                 onClick={() => {
-                  setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+                  setCurrentMonth(
+                    new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)
+                  );
                   setDate("");
                   setTime("");
                 }}
@@ -237,7 +289,9 @@ export default function ReservePage() {
               <p>{monthLabel}</p>
               <button
                 onClick={() => {
-                  setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+                  setCurrentMonth(
+                    new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
+                  );
                   setDate("");
                   setTime("");
                 }}
@@ -252,7 +306,9 @@ export default function ReservePage() {
               <>
                 <div className="grid grid-cols-7 text-center text-xs text-[#a39e96] mb-2">
                   {["日", "月", "火", "水", "木", "金", "土"].map((w) => (
-                    <div key={w} className="py-2">{w}</div>
+                    <div key={w} className="py-2">
+                      {w}
+                    </div>
                   ))}
                 </div>
                 <div className="grid grid-cols-7 gap-1 mb-6">
@@ -287,11 +343,14 @@ export default function ReservePage() {
               </>
             )}
             <div className="flex gap-4">
-              <button onClick={() => setStep(1)} className="flex-1 border border-[#c4bdb3] py-3 rounded-full text-sm">
+              <button
+                onClick={() => setStep(2)}
+                className="flex-1 border border-[#c4bdb3] py-3 rounded-full text-sm"
+              >
                 戻る
               </button>
               <button
-                onClick={() => date && setStep(3)}
+                onClick={() => date && setStep(4)}
                 disabled={!date}
                 className="flex-1 bg-[#5c564f] text-white py-3 rounded-full text-sm disabled:opacity-40"
               >
@@ -301,7 +360,8 @@ export default function ReservePage() {
           </div>
         )}
 
-        {step === 3 && (
+        {/* Step4: 時間 */}
+        {step === 4 && (
           <div>
             <h2 className="text-center text-[#7a746c] mb-2">希望時間を選択してください</h2>
             <p className="text-center text-[#a39e96] text-sm mb-6">{date}</p>
@@ -326,11 +386,14 @@ export default function ReservePage() {
               </div>
             )}
             <div className="flex gap-4">
-              <button onClick={() => setStep(2)} className="flex-1 border border-[#c4bdb3] py-3 rounded-full text-sm">
+              <button
+                onClick={() => setStep(3)}
+                className="flex-1 border border-[#c4bdb3] py-3 rounded-full text-sm"
+              >
                 戻る
               </button>
               <button
-                onClick={() => time && setStep(4)}
+                onClick={() => time && setStep(5)}
                 disabled={!time}
                 className="flex-1 bg-[#5c564f] text-white py-3 rounded-full text-sm disabled:opacity-40"
               >
@@ -340,7 +403,8 @@ export default function ReservePage() {
           </div>
         )}
 
-        {step === 4 && (
+        {/* Step5: お客様情報 */}
+        {step === 5 && (
           <div>
             <h2 className="text-center text-[#7a746c] mb-6">お客様情報を入力してください</h2>
             <div className="space-y-4 mb-8">
@@ -373,7 +437,10 @@ export default function ReservePage() {
               </p>
             </div>
             <div className="flex gap-4">
-              <button onClick={() => setStep(3)} className="flex-1 border border-[#c4bdb3] py-3 rounded-full text-sm">
+              <button
+                onClick={() => setStep(4)}
+                className="flex-1 border border-[#c4bdb3] py-3 rounded-full text-sm"
+              >
                 戻る
               </button>
               <button
