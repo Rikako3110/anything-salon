@@ -1,46 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 export async function POST(req: NextRequest) {
   try {
     const { name, menu, date, time } = await req.json();
     const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+    const staffId = process.env.STAFF_LINE_USER_ID;
 
-    if (!token) {
+    if (!token || !staffId) {
       return NextResponse.json(
-        { error: "LINE token not set" },
+        { error: "LINE token or staff id not set" },
         { status: 500 }
       );
     }
 
-    // 保存されているLINEユーザーを取得（テスト用：最新の1件）
-    const { data: users, error } = await supabase
-      .from("line_users")
-      .select("line_user_id")
-      .order("last_message_at", { ascending: false })
-      .limit(1);
-
-    if (error || !users || users.length === 0) {
-      return NextResponse.json(
-        { error: "No LINE user found" },
-        { status: 404 }
-      );
-    }
-
-    const lineUserId = users[0].line_user_id;
-    const message = `Anythingです。
-ご予約ありがとうございました。
+    const message = `新しい予約が入りました。
 
 お名前：${name}
 日時：${date} ${time}
-メニュー：${menu}
-
-ご来店をお待ちしております。`;
+メニュー：${menu}`;
 
     const res = await fetch("https://api.line.me/v2/bot/message/push", {
       method: "POST",
@@ -49,7 +26,7 @@ export async function POST(req: NextRequest) {
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
-        to: lineUserId,
+        to: staffId,
         messages: [{ type: "text", text: message }],
       }),
     });
