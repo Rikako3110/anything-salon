@@ -22,21 +22,27 @@ function extractPhone(text: string) {
   return found ? found[0] : null;
 }
 
-async function replyLine(replyToken: string, text: string) {
+async function replyLine(text: string, userId?: string) {
   const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
-  if (!token || !replyToken) return;
+  if (!token || !userId) {
+    console.error("LINE reply skipped", { hasToken: Boolean(token), userId });
+    return;
+  }
 
-  await fetch("https://api.line.me/v2/bot/message/reply", {
+  const res = await fetch("https://api.line.me/v2/bot/message/push", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
-      replyToken,
+      to: userId,
       messages: [{ type: "text", text }],
     }),
   });
+
+  const body = await res.text();
+  console.log("LINE push status:", res.status, body);
 }
 
 async function findReservationsByPhone(phone: string) {
@@ -78,7 +84,6 @@ export async function POST(req: NextRequest) {
 
     for (const event of body.events || []) {
       const lineUserId = event.source?.userId as string | undefined;
-      const replyToken = event.replyToken as string | undefined;
       if (!lineUserId) continue;
 
       if (event.type === "follow") {
@@ -90,8 +95,8 @@ export async function POST(req: NextRequest) {
           { onConflict: "line_user_id" }
         );
         await replyLine(
-          replyToken || "",
-          "友だち追加ありがとうございます。\n予約を確認するには、予約時の電話番号を送ってください。\n例：09012345678"
+          "友だち追加ありがとうございます。\n予約を確認するには、予約時の電話番号を送ってください。\n例：09012345678",
+          lineUserId
         );
         continue;
       }
@@ -123,8 +128,8 @@ export async function POST(req: NextRequest) {
 
       if (!phone) {
         await replyLine(
-          replyToken || "",
-          "予約を確認するには、予約時の電話番号を送ってください。\n例：09012345678"
+          "予約を確認するには、予約時の電話番号を送ってください。\n例：09012345678",
+          lineUserId
         );
         continue;
       }
@@ -132,15 +137,15 @@ export async function POST(req: NextRequest) {
       const lines = await findReservationsByPhone(phone);
       if (lines.length === 0) {
         await replyLine(
-          replyToken || "",
-          "その電話番号の予約は見つかりませんでした。"
+          "その電話番号の予約は見つかりませんでした。",
+          lineUserId
         );
         continue;
       }
 
       await replyLine(
-        replyToken || "",
-        "ご予約はこちらです。\n\n" + lines.join("\n\n")
+        "ご予約はこちらです。\n\n" + lines.join("\n\n"),
+        lineUserId
       );
     }
 
