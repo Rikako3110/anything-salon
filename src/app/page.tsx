@@ -137,7 +137,7 @@ export default function Home() {
           <div className="rounded-2xl overflow-hidden border border-[#e8e4de]">
             <iframe
               title="サロン地図"
-              src="https://maps.google.com/maps?q=東京都渋谷区&z=15&output=embed"
+              src="https://maps.google.com/maps?q=%E5%8C%97%E6%B5%B7%E9%81%93%E6%9C%AD%E5%B9%8C%E5%B8%82%E8%A5%BF%E5%8C%BA%E7%99%BA%E5%AF%925%E6%9D%A13%E4%B8%81%E7%9B%AE3-2&z=17&output=embed"
               width="100%"
               height="300"
               style={{ border: 0 }}
@@ -145,9 +145,6 @@ export default function Home() {
               referrerPolicy="no-referrer-when-downgrade"
             />
           </div>
-          <p className="text-[11px] text-[#a39e96] text-center mt-3">
-            ※地図は仮の位置です。正式な住所に変更できます
-          </p>
         </div>
       </section>
 
