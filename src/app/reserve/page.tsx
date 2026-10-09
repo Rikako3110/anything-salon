@@ -168,32 +168,41 @@ export default function ReservePage() {
     }
   };
 
-    if (success) {
+      if (success) {
     return (
       <div className="min-h-screen bg-[#f7f5f2] text-[#4a453f] flex flex-col items-center justify-center px-6">
-        <h1 className="text-2xl font-light mb-4">ご予約ありがとうございました</h1>
-        <p className="text-[#7a746c] text-center mb-6 leading-relaxed">
-          {name} 様<br />
-          {date} {time}<br />
-          {menu}
-        </p>
-        <p className="text-[#7a746c] text-center text-sm mb-4 leading-relaxed">
-          予約確認をLINEで受け取る場合は、
-          <br />
-          公式アカウントを友だち追加して、
-          <br />
-          予約時の電話番号を送ってください。
-        </p>
-        <p className="text-center text-xl tracking-widest mb-6">{phone}</p>
-        <a
-          href="https://line.me/R/ti/p/@012qdsgz"
-          className="bg-[#06c755] text-white px-8 py-3 rounded-full text-sm mb-4"
-        >
-          LINEを友だち追加
-        </a>
-        <a href="/" className="bg-[#5c564f] text-white px-8 py-3 rounded-full text-sm">
-          トップに戻る
-        </a>
+        <div className="w-full max-w-sm text-center">
+          <h1 className="text-2xl font-light mb-6">ご予約ありがとうございました</h1>
+          <div className="border border-[#e8e4de] bg-white rounded-2xl px-6 py-5 mb-6">
+            <p className="leading-relaxed">
+              {name} 様
+              <br />
+              {date} {time}
+              <br />
+              {menu}
+            </p>
+          </div>
+          <p className="text-[#7a746c] text-sm leading-relaxed mb-3">
+            LINEで予約確認や前日のお知らせを受け取る場合は、
+            <br />
+            公式アカウントにこの電話番号を送ってください。
+          </p>
+          <p className="text-xl tracking-widest mb-6">{phone}</p>
+          <div className="flex flex-col gap-3">
+            <a
+              href="https://line.me/R/ti/p/@012qdsgz"
+              className="bg-[#06c755] text-white px-8 py-3 rounded-full text-sm"
+            >
+              LINEを友だち追加
+            </a>
+            <a
+              href="/"
+              className="bg-[#5c564f] text-white px-8 py-3 rounded-full text-sm"
+            >
+              トップに戻る
+            </a>
+          </div>
+        </div>
       </div>
     );
   }
