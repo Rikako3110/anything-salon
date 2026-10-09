@@ -70,7 +70,8 @@ async function findReservationsByPhone(phone: string) {
   const today = new Date().toISOString().split("T")[0];
   const rows = reservations || [];
   const upcoming = rows.filter((r) => r.date >= today);
-  const list = upcoming.length > 0 ? upcoming : rows.slice(-3);
+  const one = upcoming[0] || rows[rows.length - 1];
+  const list = one ? [one] : [];
 
   return list.map((r) => {
     const customer = matched.find((c) => c.id === r.customer_id);
