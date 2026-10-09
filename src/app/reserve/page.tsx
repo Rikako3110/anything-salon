@@ -168,33 +168,29 @@ export default function ReservePage() {
     }
   };
 
-  if (success) {
+    if (success) {
     return (
-      <p className="text-gray-400 text-center mb-4">
-  {name} 様<br />
-  {date} {time}<br />
-  {menu}
-</p>
-<p className="text-gray-300 text-center text-sm mb-6 leading-relaxed">
-  予約確認をLINEで受け取る場合は、<br />
-  公式アカウントを友だち追加して、<br />
-  次の番号を送ってください。
-</p>
-<p className="text-center text-xl tracking-widest mb-2">
-  {phone}
-</p>
-<a
-  href="https://line.me/R/ti/p/@012qdsgz"
-  className="bg-white text-black px-8 py-3 rounded-full mb-4"
->
-  LINEを友だち追加
-</a><div className="min-h-screen bg-[#f7f5f2] text-[#4a453f] flex flex-col items-center justify-center px-6">
+      <div className="min-h-screen bg-[#f7f5f2] text-[#4a453f] flex flex-col items-center justify-center px-6">
         <h1 className="text-2xl font-light mb-4">ご予約ありがとうございました</h1>
-        <p className="text-[#7a746c] text-center mb-10 leading-relaxed">
+        <p className="text-[#7a746c] text-center mb-6 leading-relaxed">
           {name} 様<br />
           {date} {time}<br />
           {menu}
         </p>
+        <p className="text-[#7a746c] text-center text-sm mb-4 leading-relaxed">
+          予約確認をLINEで受け取る場合は、
+          <br />
+          公式アカウントを友だち追加して、
+          <br />
+          予約時の電話番号を送ってください。
+        </p>
+        <p className="text-center text-xl tracking-widest mb-6">{phone}</p>
+        <a
+          href="https://line.me/R/ti/p/@012qdsgz"
+          className="bg-[#06c755] text-white px-8 py-3 rounded-full text-sm mb-4"
+        >
+          LINEを友だち追加
+        </a>
         <a href="/" className="bg-[#5c564f] text-white px-8 py-3 rounded-full text-sm">
           トップに戻る
         </a>
