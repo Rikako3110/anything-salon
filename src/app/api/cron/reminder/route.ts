@@ -6,8 +6,13 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+function digitsOnly(text: string) {
+  return text
+    .replace(/[０-９]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0))
+    .replace(/\D/g, "");
+}
+
 export async function GET(req: NextRequest) {
-  // Vercel Cron からの呼び出しを簡易チェック
   const authHeader = req.headers.get("authorization");
   if (
     process.env.CRON_SECRET &&
@@ -22,26 +27,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "No LINE token" }, { status: 500 });
     }
 
-    // 明日の日付（JST）
     const now = new Date();
     const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-    jst.setDate(jst.getDate() + 1);
+    jst.setUTCDate(jst.getUTCDate() + 1);
     const tomorrow = jst.toISOString().split("T")[0];
 
-    // 明日の予約を取得
     const { data: reservations, error } = await supabase
       .from("reservations")
-      .select(`
-        id,
-        date,
-        time,
-        menu_id,
-        status,
-        customers (
-          name,
-          line_user_id
-        )
-      `)
+      .select("id, date, time, menu_id, customers(name, phone)")
       .eq("date", tomorrow)
       .eq("status", "confirmed");
 
@@ -49,33 +42,48 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const menuNames: Record<string, string> = {
-      facial: "フェイシャル",
-      body: "ボディ",
-      hair: "脱毛",
+    const { data: lineUsers } = await supabase
+      .from("line_users")
+      .select("line_user_id, phone");
+
+    const { data: menus } = await supabase.from("menus").select("id, name");
+
+    const byPhone = new Map<string, string>();
+    for (const user of lineUsers || []) {
+      if (!user.phone || !user.line_user_id) continue;
+      byPhone.set(digitsOnly(user.phone), user.line_user_id);
+    }
+
+    const menuName = (id: string) => {
+      const found = menus?.find((menu) => menu.id === id);
+      if (found?.name) return found.name;
+      if (id === "facial") return "フェイシャル";
+      if (id === "body") return "ボディ";
+      if (id === "hair") return "脱毛";
+      return id;
     };
 
     let sent = 0;
     let skipped = 0;
 
-    for (const r of reservations || []) {
-      const customer = Array.isArray(r.customers)
-        ? r.customers[0]
-        : r.customers;
+    for (const reservation of reservations || []) {
+      const customer = Array.isArray(reservation.customers)
+        ? reservation.customers[0]
+        : reservation.customers;
+      const phone = digitsOnly(customer?.phone || "");
+      const lineUserId = phone ? byPhone.get(phone) : undefined;
 
-      const lineUserId = customer?.line_user_id;
       if (!lineUserId) {
         skipped++;
         continue;
       }
 
-      const menu = menuNames[r.menu_id] || r.menu_id;
       const message = `Anythingです。
 明日のご予約のお知らせです。
 
 お名前：${customer?.name || ""}
-日時：${r.date} ${r.time}
-メニュー：${menu}
+日時：${reservation.date} ${reservation.time}
+メニュー：${menuName(reservation.menu_id)}
 
 ご来店をお待ちしております。`;
 
