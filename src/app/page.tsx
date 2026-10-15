@@ -150,20 +150,35 @@ export default function Home() {
 
       {/* Footer CTA */}
       <section className="px-6 py-16 text-center border-t border-[#e8e4de]">
-        <p className="text-xs tracking-[0.2em] text-[#7a746c] mb-6">
-          RESERVATION
-        </p>
-        <a
-          href="/reserve"
-          className="inline-block bg-[#5c564f] text-[#f7f5f2] px-10 py-3.5 rounded-full text-xs tracking-[0.2em] hover:bg-[#3d3935] transition"
-        >
-          ご予約はこちら
-        </a>
-      </section>
+  <p className="text-xs tracking-[0.2em] text-[#7a746c] mb-6">
+    RESERVATION
+  </p>
+  <a
+    href="/reserve"
+    className="inline-block bg-[#5c564f] text-[#f7f5f2] px-10 py-3.5 rounded-full text-xs tracking-[0.2em] hover:bg-[#3d3935] transition"
+  >
+    ご予約はこちら
+  </a>
+  <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+    <a
+      href="https://line.me/R/ti/p/@012qdsgz"
+      target="_blank"
+      rel="noreferrer"
+      className="inline-block bg-[#06c755] text-white px-8 py-3 rounded-full text-xs tracking-[0.15em]"
+    >
+      公式LINE
+    </a>
+    <a
+      href="https://www.instagram.com/anything.sapporo"
+      target="_blank"
+      rel="noreferrer"
+      className="inline-block border border-[#c4bdb3] text-[#4a453f] px-8 py-3 rounded-full text-xs tracking-[0.15em] hover:bg-white transition"
+    >
+      Instagram
+    </a>
+  </div>
+</section>
 
-      <footer className="py-8 text-center text-[11px] tracking-widest text-[#a39e96]">
-        © 2026 Anything
-      </footer>
-    </div>
-  );
-}
+<footer className="py-8 text-center text-[11px] tracking-widest text-[#a39e96]">
+  © 2026 Anything
+</footer>
