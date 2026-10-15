@@ -182,3 +182,6 @@ export default function Home() {
 <footer className="py-8 text-center text-[11px] tracking-widest text-[#a39e96]">
   © 2026 Anything
 </footer>
+    </div>
+  );
+}
